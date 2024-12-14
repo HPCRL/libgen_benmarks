@@ -1,0 +1,4 @@
+Results
+ThreadNum=24 M=4096 N=128 K=4096    Performance: 1179 GFLOPs/s
+ThreadNum=24 M=128 N=8192 K=4096    Performance: 746 GFLOPs/s
+ThreadNum=24 M=128 N=4096 K=8192    Performance: 741 GFLOPs/s
