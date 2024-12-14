@@ -100,7 +100,7 @@ def testmatmul_add():
             csv_file.write(f"start_time:{str(start_time)}\n")
             
         tune_option = auto_scheduler.TuningOptions(
-            num_measure_trials=10,
+            num_measure_trials=1000,
             runner=auto_scheduler.LocalRunner(repeat=10, enable_cpu_cache_flush=True),
             measure_callbacks=[auto_scheduler.RecordToFile(log_file)],
             verbose=2,
