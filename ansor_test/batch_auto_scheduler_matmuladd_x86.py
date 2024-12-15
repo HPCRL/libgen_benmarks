@@ -109,36 +109,45 @@ def testmatmul_add():
         # Run auto-tuning (search)
         task.tune(tune_option)
         # Apply the best schedule
-        sch, args = task.apply_best(log_file)
-        
-        func = tvm.build(sch, args, target)
-        
-        a_np = np.random.uniform(size=(M, L)).astype(np.float32)
-        b_np = np.random.uniform(size=(L, N)).astype(np.float32)
-        c_np = np.random.uniform(size=(M, N)).astype(np.float32)
-        out_np = a_np.dot(b_np) + c_np
-
-        dev = tvm.cpu()
-        a_tvm = tvm.nd.array(a_np, device=dev)
-        b_tvm = tvm.nd.array(b_np, device=dev)
-        c_tvm = tvm.nd.array(c_np, device=dev)
-        out_tvm = tvm.nd.empty(out_np.shape, device=dev)
-        func(a_tvm, b_tvm, c_tvm, out_tvm)
-        
-        evaluator = func.time_evaluator(func.entry_name, dev, min_repeat_ms=500)
-        # Check results
-        np.testing.assert_allclose(out_np, out_tvm.numpy(), rtol=1e-3)
-        
-        # in seconds
-        input_shape = (M, N, L)
-        gflops = matmul_gflops(input_shape, np.median(evaluator(a_tvm, b_tvm, c_tvm, out_tvm).results))
-        
-        # write the gflops to the csv file
-        with open(csv_file_path, 'a', newline='') as csv_file:
-            csv_file.write(f"gflops:{str(gflops)}\n")
+        try:
+            sch, args = task.apply_best(log_file)
             
-        with open(combined_res_file, 'a') as f:
-            f.write(f"Problem:{i} M:{M} N:{N} K:{L} GFLOPS:{gflops}\n")
+            func = tvm.build(sch, args, target)
+            
+            a_np = np.random.uniform(size=(M, L)).astype(np.float32)
+            b_np = np.random.uniform(size=(L, N)).astype(np.float32)
+            c_np = np.random.uniform(size=(M, N)).astype(np.float32)
+            out_np = a_np.dot(b_np) + c_np
+
+            dev = tvm.cpu()
+            a_tvm = tvm.nd.array(a_np, device=dev)
+            b_tvm = tvm.nd.array(b_np, device=dev)
+            c_tvm = tvm.nd.array(c_np, device=dev)
+            out_tvm = tvm.nd.empty(out_np.shape, device=dev)
+            func(a_tvm, b_tvm, c_tvm, out_tvm)
+            
+            evaluator = func.time_evaluator(func.entry_name, dev, min_repeat_ms=500)
+            # Check results
+            np.testing.assert_allclose(out_np, out_tvm.numpy(), rtol=1e-3)
+            
+            # in seconds
+            input_shape = (M, N, L)
+            gflops = matmul_gflops(input_shape, np.median(evaluator(a_tvm, b_tvm, c_tvm, out_tvm).results))
+            
+            # write the gflops to the csv file
+            with open(csv_file_path, 'a', newline='') as csv_file:
+                csv_file.write(f"gflops:{str(gflops)}\n")
+                
+            with open(combined_res_file, 'a') as f:
+                f.write(f"Problem:{i} M:{M} N:{N} K:{L} GFLOPS:{gflops}\n")
+        except Exception as e:
+            print(e)
+            with open(combined_res_file, 'a') as f:
+                f.write(f"Problem:{i} M:{M} N:{N} K:{L} GFLOPS:0, Can't find any valid schedule\n")
+    
+    # rename the combined_res_file
+    date = time.strftime("%Y%m%d")
+    os.rename(combined_res_file, f"combined_results_date_{date}.txt")
 
 if __name__ == '__main__':
     testmatmul_add()
